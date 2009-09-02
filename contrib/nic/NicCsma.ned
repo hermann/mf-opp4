@@ -40,7 +40,7 @@ import org.mf2.contrib.nic.phyLayer.SnrEval;
 
 module NicCsma
 {
-    @display("i=block/ifcard");
+    @display("i=block/ifcard;bgl=2");
     gates:
         input uppergateIn; // from upper layers
         output uppergateOut; // to upper layers
@@ -55,7 +55,7 @@ module NicCsma
         }
         decider: SnrDecider {
             parameters:
-                @display("p=106,157;i=block/process_s");
+                @display("p=167,160");
 
         }
         snrEval: SnrEval {

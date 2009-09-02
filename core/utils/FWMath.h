@@ -26,19 +26,17 @@
 
 #include <math.h>
 
-
 /* windows math.h doesn't define the PI variable so we have to do it
-   by hand*/
+ by hand*/
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
 /* Constant for comparing doubles. Two doubles at most epsilon apart
-   are declared equal.*/
+ are declared equal.*/
 #ifndef EPSILON
 #define EPSILON 0.001
 #endif
-
 
 /**
  * @brief Support functions for mathematical operations.
@@ -53,69 +51,84 @@ class FWMath {
 
 public:
 
-    /**
-     * Returns the rest of a whole-numbered division.
-     */
-    static double mod(double dividend, double divisor) {
-        double i;
-        return modf(dividend/divisor, &i)*divisor;
-    }
+	/**
+	 * Returns the rest of a whole-numbered division.
+	 */
+	static double mod(double dividend, double divisor) {
+		double i;
+		return modf(dividend / divisor, &i) * divisor;
+	}
 
-    /**
-     * Returns the result of a whole-numbered division.
-     */
-    static double div(double dividend, double divisor) {
-        double i;
-        double f;
-        f=modf(dividend/divisor, &i);
-        return i;
-    }
+	/**
+	 * Returns the result of a whole-numbered division.
+	 */
+	static double div(double dividend, double divisor) {
+		double i;
+		double f;
+		f = modf(dividend / divisor, &i);
+		return i;
+	}
 
-    /**
-     * Tests whether two doubles are close enough to be declared equal.
-     * @return true if parameters are at most epsilon apart, false
-     * otherwise
-     */
-    static bool close(double one, double two) {
-        return fabs(one-two)<EPSILON;
-    }
+	/**
+	 * Tests whether two doubles are close enough to be declared equal.
+	 * @return true if parameters are at most epsilon apart, false
+	 * otherwise
+	 */
+	static bool close(double one, double two) {
+		return fabs(one - two) < EPSILON;
+	}
 
-    /**
-     * @return 0 if i is close to 0, 1 if i is positive greater epsilon,
-     * -1 if it is negative smaller epsilon.
-     */
-    static int stepfunction(double i) { return (i>EPSILON) ? 1 : close(i,0) ? 0 :-1; };
+	/**
+	 * @return 0 if i is close to 0, 1 if i is positive greater epsilon,
+	 * -1 if it is negative smaller epsilon.
+	 */
+	static int stepfunction(double i) {
+		return (i > EPSILON) ? 1 : close(i, 0) ? 0 : -1;
+	}
 
+	/**
+	 * @return 1 if parameter greater or equal zero, -1 otherwise
+	 */
+	static int sign(double i) {
+		return (i >= 0) ? 1 : -1;
+	}
 
-    /**
-     * @return 1 if parameter greater or equal zero, -1 otherwise
-     */
-    static int sign(double i) { return (i>=0)? 1 : -1; };
+	/**
+	 * @return integer that corresponds to rounded double parameter
+	 */
+	static int round(double d) {
+		return (int) (ceil(d - 0.5));
+	}
 
-    /**
-     * @return integer that corresponds to rounded double parameter
-     */
-    static int round(double d) { return (int)(ceil(d-0.5)); }
+	/**
+	 * @return greater of the given parameters
+	 */
+	static double max(double a, double b) {
+		return (a < b) ? b : a;
+	}
 
-    /**
-     * @return greater of the given parameters
-     */
-    static double max(double a, double b) { return (a<b)? b : a; }
+	/**
+	 * Convert a dBm value into milli-Watt
+	 */
+	static double dBm2mW(double dBm) {
+		return pow(10.0, dBm / 10.0);
+	}
 
-    /**
-     * convert a dBm value into milli Watt
-     */
-    static double dBm2mW(double dBm){
-        return pow(10.0, dBm/10.0);
-    }
+	/**
+	 * Convert a dBm value into Watt
+	 */
+	static double dBm2W(double dBm) {
+		return dBm2mW(dBm) * 1e-3;
+	}
 
-    /**
-     * helper function, returns squared euclidean distance
-     * makes code less messy
-     */
-    static inline double torDist (double x1, double x2, double y1, double y2) {
-        return (x1-x2) * (x1-x2) + (y1-y2) * (y1-y2);
-    };
+	/**
+	 * helper function, returns squared euclidean distance
+	 * makes code less messy
+	 */
+	static inline double torDist(double x1, double x2, double y1, double y2) {
+		return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
+	}
+
 };
 
 #endif

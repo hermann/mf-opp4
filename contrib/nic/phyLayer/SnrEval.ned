@@ -32,11 +32,11 @@ simple SnrEval
         // if false, the RSSI will not be published 
         // during the reception of a frame
         bool publishRSSIAlways;
-        volatile double transmitterPower;
+        // Transmitter power [dBm]
+        volatile double transmitterPower @unit(dBm);
         double headerLength;
-        volatile double carrierFrequency;
-        volatile double thermalNoise;
-        volatile double pathLossAlpha;
+        // Thermal noise [dBm]
+        volatile double thermalNoise @unit(dBm) = default(-110 dBm);
         volatile double sensitivity;
         @display("i=block/mac");
     gates:

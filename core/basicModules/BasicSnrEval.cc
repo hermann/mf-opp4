@@ -17,7 +17,6 @@
  * part of:     framework implementation developed by tkn
  ***************************************************************************/
 
-
 #include "BasicSnrEval.h"
 #include "ChannelControl.h"
 #include "CoreDebug.h"
@@ -36,52 +35,40 @@ const double BasicSnrEval::speedOfLight = ChannelControl::speedOfLight;
  * If you want to use your own AirFrames you have to redefine createCapsulePkt
  * function.
  */
-void BasicSnrEval::initialize(int stage)
-{
-    ChannelAccess::initialize(stage);
+void BasicSnrEval::initialize(int stage) {
+	ChannelAccess::initialize(stage);
 
-    if (stage == 0){
-        uppergateIn = findGate("uppergateIn");
-        uppergateOut = findGate("uppergateOut");
-        upperControlOut = findGate("upperControlOut");
-        hasPar("coreDebug") ? coreDebug = par("coreDebug").boolValue() : coreDebug = false;
-        headerLength = par("headerLength");
+	if (stage == 0) {
+		uppergateIn = findGate("uppergateIn");
+		uppergateOut = findGate("uppergateOut");
+		upperControlOut = findGate("upperControlOut");
 
-        hasPar("transmitterPower") ? transmitterPower=par("transmitterPower").doubleValue() :
-            transmitterPower = static_cast<double>(cc->par("pMax"));
+		coreDebug = hasPar("coreDebug") ? par("coreDebug") : false;
+		headerLength = par("headerLength");
 
-        hasPar("sensitivity") ? sensitivity=FWMath::dBm2mW(par("sensitivity").doubleValue()) :
-            sensitivity = FWMath::dBm2mW(static_cast<double>(cc->par("sat")));
+		// Transmitter power is internally stored in mW.
+		transmitterPower = FWMath::dBm2mW(par("transmitterPower"));
 
-        hasPar("carrierFrequency") ? carrierFrequency=par("carrierFrequency").doubleValue() :
-            carrierFrequency = static_cast<double>(cc->par("carrierFrequency"));
+		sensitivity = FWMath::dBm2mW(par("sensitivity").doubleValue());
 
-        hasPar("alpha") ? alpha=par("alpha").doubleValue() :
-            alpha = static_cast<double>(cc->par("alpha"));
+		// The path loss exponent exponent should only be defined once.
+		// To avoid re-definition in SnrEval, always take it from ChannelControl.
+		alpha = cc->par("alpha");
 
+		// Same holds for the carrier frequency.
+		carrierFrequency = cc->par("carrierFrequency");
 
-        catActiveChannel = bb->subscribe(this, &channel, getParentModule()->getId());
-    }
-    else {
-        if(alpha < cc->par("alpha").doubleValue())
-            error("SnrEval::initialize() alpha can't be smaller than in \
-                   ChannelControl. Please adjust your omnetpp.ini file accordingly");
+		catActiveChannel = bb->subscribe(this, &channel, getParentModule()->getId());
+	} else {
+		if (transmitterPower > cc->par("pMax").doubleValue())
+			error("SnrEval::initialize() tranmitterPower can't be bigger than pMax in ChannelControl! Please adjust your omnetpp.ini file accordingly");
 
-        if(transmitterPower > cc->par("pMax").doubleValue())
-            error("SnrEval::initialize() tranmitterPower can't be bigger than \
-                   pMax in ChannelControl! Please adjust your omnetpp.ini file accordingly");
+		double sat = FWMath::dBm2mW(cc->par("sat"));
+		if (sensitivity < sat)
+			error("SnrEval::initialize() sensitivity can't be smaller than the signal attenuation threshold (sat) in ChannelControl. Please adjust your omnetpp.ini file accordingly");
 
-        double sat = FWMath::dBm2mW(cc->par("sat"));
-        if(sensitivity < sat)
-            error("SnrEval::initialize() sensitivity can't be smaller than the signal attenuation threshold (sat) in "
-            		"ChannelControl. Please adjust your omnetpp.ini file accordingly");
-
-        if(carrierFrequency < cc->par("carrierFrequency").doubleValue())
-            error("SnrEval::initialize() carrierFrequency can't be smaller than in \
-                   ChannelControl. Please adjust your omnetpp.ini file accordingly");
-
-        txOverTimer = new cMessage("txOverTimer");
-    }
+		txOverTimer = new cMessage("txOverTimer");
+	}
 }
 
 /**
@@ -99,34 +86,32 @@ void BasicSnrEval::initialize(int stage)
  * @sa handleUpperMsg, handleLowerMsgStart, handleLowerMsgEnd,
  * handleSelfMsg
  */
-void BasicSnrEval::handleMessage(cMessage *msg)
-{
-    if (msg->getArrivalGateId() == uppergateIn){
-        assert(dynamic_cast<cPacket*>(msg));
-        AirFrame *frame = encapsMsg(static_cast<cPacket*>(msg));
-        handleUpperMsg(frame);
+void BasicSnrEval::handleMessage(cMessage *msg) {
+	if (msg->getArrivalGateId() == uppergateIn) {
+		assert(dynamic_cast<cPacket*>(msg));
+		AirFrame *frame = encapsMsg(static_cast<cPacket*> (msg));
+		handleUpperMsg(frame);
+	} else if (msg == txOverTimer) {
+		coreEV<< "transmission over" << endl;
+		sendControlUp(new cMessage("TRANSMISSION_OVER", NicControlType::TRANSMISSION_OVER));
     }
-    else if(msg == txOverTimer) {
-        coreEV << "transmission over" << endl;
-        sendControlUp(new cMessage("TRANSMISSION_OVER", NicControlType::TRANSMISSION_OVER));
-    }
-    else if (msg->isSelfMessage()) {
-        if(msg->getKind() == RECEPTION_COMPLETE) {
-            coreEV << "frame is completely received now\n";
-            // unbuffer the message
-            AirFrame *frame = unbufferMsg(msg);
-            handleLowerMsgEnd(frame);
-        }
-        else {
-            handleSelfMsg(msg);
-        }
-    }
-    else {
-        // msg must come from channel
-        AirFrame *frame = static_cast<AirFrame *>(msg);
-        handleLowerMsgStart(frame);
-        bufferMsg(frame);
-    }
+	else if (msg->isSelfMessage()) {
+		if(msg->getKind() == RECEPTION_COMPLETE) {
+			coreEV << "frame is completely received now\n";
+			// unbuffer the message
+			AirFrame *frame = unbufferMsg(msg);
+			handleLowerMsgEnd(frame);
+		}
+		else {
+			handleSelfMsg(msg);
+		}
+	}
+	else {
+		// msg must come from channel
+		AirFrame *frame = static_cast<AirFrame *>(msg);
+		handleLowerMsgStart(frame);
+		bufferMsg(frame);
+	}
 }
 
 /**
@@ -135,23 +120,21 @@ void BasicSnrEval::handleMessage(cMessage *msg)
  * complete. So, look at unbufferMsg to see what happens when the
  * transmission is complete..
  */
-void BasicSnrEval::bufferMsg(AirFrame * frame)
-{
-    // set timer to indicate transmission is complete
-    cMessage *timer = new cMessage(NULL, RECEPTION_COMPLETE);
-    timer->setContextPointer(frame);
-    scheduleAt(simTime() + (frame->getDuration()), timer);
+void BasicSnrEval::bufferMsg(AirFrame * frame) {
+	// set timer to indicate transmission is complete
+	cMessage *timer = new cMessage(NULL, RECEPTION_COMPLETE);
+	timer->setContextPointer(frame);
+	scheduleAt(simTime() + (frame->getDuration()), timer);
 }
 
 /**
  * Get the context pointer to the now completely received AirFrame and
  * delete the self message
  */
-AirFrame *BasicSnrEval::unbufferMsg(cMessage *msg)
-{
-    AirFrame *frame = static_cast<AirFrame *>(msg->getContextPointer());
-    delete msg;
-    return frame;
+AirFrame *BasicSnrEval::unbufferMsg(cMessage *msg) {
+	AirFrame *frame = static_cast<AirFrame *> (msg->getContextPointer());
+	delete msg;
+	return frame;
 }
 
 /**
@@ -160,16 +143,15 @@ AirFrame *BasicSnrEval::unbufferMsg(cMessage *msg)
  * headerLength, sets the pSend (transmitterPower) and returns the
  * AirFrame.
  */
-AirFrame *BasicSnrEval::encapsMsg(cPacket *msg)
-{
-    AirFrame *frame = new AirFrame(msg->getName(), msg->getKind());
-    frame->setPSend(transmitterPower);
-    frame->setBitLength(headerLength);
-    frame->setChannelId(channel.getActiveChannel());
-    frame->encapsulate(msg);
-    frame->setDuration(calcDuration(frame));
-    frame->setHostMove(hostMove);
-    return frame;
+AirFrame *BasicSnrEval::encapsMsg(cPacket *msg) {
+	AirFrame *frame = new AirFrame(msg->getName(), msg->getKind());
+	frame->setPSend(transmitterPower);
+	frame->setBitLength(headerLength);
+	frame->setChannelId(channel.getActiveChannel());
+	frame->encapsulate(msg);
+	frame->setDuration(calcDuration(frame));
+	frame->setHostMove(hostMove);
+	return frame;
 }
 
 /**
@@ -181,23 +163,21 @@ AirFrame *BasicSnrEval::encapsMsg(cPacket *msg)
  *
  * to be called within @ref handleLowerMsgEnd.
  */
-void BasicSnrEval::sendUp(AirFrame *msg, const SnrList& list)
-{
-    // create ControlInfo
-    SnrControlInfo *cInfo = new SnrControlInfo;
-    // attach the list to cInfo
-    cInfo->setSnrList(list);
-    // attach the cInfo to the AirFrame
-    msg->setControlInfo(cInfo);
-    send(static_cast<cMessage *>(msg), uppergateOut);
+void BasicSnrEval::sendUp(AirFrame *msg, const SnrList& list) {
+	// create ControlInfo
+	SnrControlInfo *cInfo = new SnrControlInfo;
+	// attach the list to cInfo
+	cInfo->setSnrList(list);
+	// attach the cInfo to the AirFrame
+	msg->setControlInfo(cInfo);
+	send(static_cast<cMessage *> (msg), uppergateOut);
 }
 
 /**
  * send a control message to the upper layer
  */
-void BasicSnrEval::sendControlUp(cMessage *msg)
-{
-    send(msg, upperControlOut);
+void BasicSnrEval::sendControlUp(cMessage *msg) {
+	send(msg, upperControlOut);
 }
 
 /**
@@ -209,9 +189,8 @@ void BasicSnrEval::sendControlUp(cMessage *msg)
  *
  * @sa sendToChannel
  */
-void BasicSnrEval::sendDown(AirFrame *msg)
-{
-    sendToChannel(static_cast<cMessage *>(msg), 0.0);
+void BasicSnrEval::sendDown(AirFrame *msg) {
+	sendToChannel(static_cast<cMessage *> (msg), 0.0);
 }
 
 /**
@@ -221,10 +200,9 @@ void BasicSnrEval::sendDown(AirFrame *msg)
  * The MAC frame is already encapsulated in an AirFrame and all standard
  * header fields are set.
  */
-void BasicSnrEval::handleUpperMsg(AirFrame * frame)
-{
-    scheduleAt(simTime() + frame->getDuration(), txOverTimer);
-    sendDown(frame);
+void BasicSnrEval::handleUpperMsg(AirFrame * frame) {
+	scheduleAt(simTime() + frame->getDuration(), txOverTimer);
+	sendDown(frame);
 }
 
 /**
@@ -244,42 +222,40 @@ void BasicSnrEval::handleUpperMsg(AirFrame * frame)
  *
  * @sa SnrList, SnrEval
  */
-void BasicSnrEval::handleLowerMsgEnd(AirFrame * frame)
-{
-    coreEV << "in handleLowerMsgEnd\n";
+void BasicSnrEval::handleLowerMsgEnd(AirFrame * frame) {
+	coreEV<< "in handleLowerMsgEnd\n";
 
-    // We need to create a "dummy" snr list that we can pass together
-    // with the message to the decider module so that also the
-    // BasicSnrEval is able to work.
-    SnrList snrList;
+	// We need to create a "dummy" snr list that we can pass together
+	// with the message to the decider module so that also the
+	// BasicSnrEval is able to work.
+	SnrList snrList;
 
-    // However you can take this as a reference how to create your own
-    // snr entries.
+	// However you can take this as a reference how to create your own
+	// snr entries.
 
-    // Everytime you want to add something to the snr information list
-    // it has to look like this:
-    // 1. create a list entry and fill the fields
-    SnrListEntry listEntry;
-    listEntry.time = simTime();
-    listEntry.snr = 3;          //just a senseless example
+	// Everytime you want to add something to the snr information list
+	// it has to look like this:
+	// 1. create a list entry and fill the fields
+	SnrListEntry listEntry;
+	listEntry.time = simTime();
+	listEntry.snr = 3; //just a senseless example
 
-    // 2. add an entry to the SnrList
-    snrList.push_back(listEntry);
+	// 2. add an entry to the SnrList
+	snrList.push_back(listEntry);
 
-    // 3. pass the message together with the list to the decider
-    sendUp(frame, snrList);
+	// 3. pass the message together with the list to the decider
+	sendUp(frame, snrList);
 }
 
-
-void BasicSnrEval::finish()
-{
-    if(!txOverTimer->isScheduled()) delete txOverTimer;
+void BasicSnrEval::finish() {
+	if (!txOverTimer->isScheduled())
+		delete txOverTimer;
 }
 
-void BasicSnrEval::receiveBBItem(int category, const BBItem *details, int scopeModuleId)
-{
-    ChannelAccess::receiveBBItem(category, details, scopeModuleId);
-    if(category == catActiveChannel) {
-        channel = *(static_cast<const ActiveChannel *>(details));
-    }
+void BasicSnrEval::receiveBBItem(int category, const BBItem *details,
+		int scopeModuleId) {
+	ChannelAccess::receiveBBItem(category, details, scopeModuleId);
+	if (category == catActiveChannel) {
+		channel = *(static_cast<const ActiveChannel *> (details));
+	}
 }
