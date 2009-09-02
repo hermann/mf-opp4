@@ -58,7 +58,7 @@ void BasicSnrEval::initialize(int stage)
 
         hasPar("alpha") ? alpha=par("alpha").doubleValue() :
             alpha = static_cast<double>(cc->par("alpha"));
-        
+
 
         catActiveChannel = bb->subscribe(this, &channel, getParentModule()->getId());
     }
@@ -66,19 +66,20 @@ void BasicSnrEval::initialize(int stage)
         if(alpha < cc->par("alpha").doubleValue())
             error("SnrEval::initialize() alpha can't be smaller than in \
                    ChannelControl. Please adjust your omnetpp.ini file accordingly");
-        
+
         if(transmitterPower > cc->par("pMax").doubleValue())
             error("SnrEval::initialize() tranmitterPower can't be bigger than \
                    pMax in ChannelControl! Please adjust your omnetpp.ini file accordingly");
-        
-        if(sensitivity < FWMath::dBm2mW(cc->par("sat").doubleValue()))
-            error("SnrEval::initialize() sensitivity can't be smaller than the signal attentuation threshold (sat) in \
-                   ChannelControl. Please adjust your omnetpp.ini file accordingly");
-        
+
+        double sat = FWMath::dBm2mW(cc->par("sat"));
+        if(sensitivity < sat)
+            error("SnrEval::initialize() sensitivity can't be smaller than the signal attenuation threshold (sat) in "
+            		"ChannelControl. Please adjust your omnetpp.ini file accordingly");
+
         if(carrierFrequency < cc->par("carrierFrequency").doubleValue())
             error("SnrEval::initialize() carrierFrequency can't be smaller than in \
                    ChannelControl. Please adjust your omnetpp.ini file accordingly");
-        
+
         txOverTimer = new cMessage("txOverTimer");
     }
 }
@@ -173,7 +174,7 @@ AirFrame *BasicSnrEval::encapsMsg(cPacket *msg)
 
 /**
  * Attach control info to the message and send message to the upper
- * layer. 
+ * layer.
  *
  * @param msg AirFrame to pass to the decider
  * @param list Snr list to attach as control info
