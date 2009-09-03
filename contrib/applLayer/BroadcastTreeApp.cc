@@ -48,8 +48,9 @@ void BroadcastTreeApp::handleLowerMsg(cMessage* msg) {
 	ApplPkt *m;
 	switch (msg->getKind()) {
 	case BROADCAST_MESSAGE:
-		m = static_cast<ApplPkt *> (msg);
+		m = static_cast<ApplPkt*>(msg);
 		EV << "Received a broadcast packet from host[" << m->getSrcAddr() << "]\n";
+		delete m;
 		if (broadcasted) {
 			EV << "This host has already broadcasted.\n";
 		} else {
