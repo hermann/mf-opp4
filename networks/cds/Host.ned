@@ -1,41 +1,28 @@
-//***************************************************************************
-// * file:        Host.ned
-// *
-// * author:      Marc Loebbers
-// *
-// * copyright:   (C) 2004 Telecommunication Networks Group (TKN) at
-// *              Technische Universitaet Berlin, Germany.
-// *
-// *              This program is free software; you can redistribute it 
-// *              and/or modify it under the terms of the GNU General Public 
-// *              License as published by the Free Software Foundation; either
-// *              version 2 of the License, or (at your option) any later 
-// *              version.
-// *              For further information see file COPYING 
-// *              in the top level directory
-// ***************************************************************************
-// * part of:     framework implementation developed by tkn
-// * description: a host in the 802.11 test network
-// *              
-// ***************************************************************************
-// * changelog:   $Revision: 266 $
-// *              last modified:   $Date: 2006-04-28 16:14:49 +0200 (Fr, 28 Apr 2006) $
-// *              by:              $Author: koepke $
-// **************************************************************************/
-
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+// 
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program.  If not, see http://www.gnu.org/licenses/.
+// 
 
 package org.mf2.networks.cds;
 
-import org.mf2.contrib.applLayer.BurstApplLayer;
+import org.mf2.contrib.applLayer.BroadcastTreeApp;
 import org.mf2.contrib.netwLayer.SimpleArp;
 import org.mf2.contrib.netwLayer.SimpleNetwLayer;
 import org.mf2.contrib.nic.NicCsma;
 import org.mf2.core.basicModules.BasicMobility;
 import org.mf2.core.blackboard.Blackboard;
 
-
 module Host
-
 {
     parameters:
         @display("bgb=250,250,white;bgp=10,10;i=device/palm");
@@ -58,7 +45,7 @@ module Host
                 @display("p=200,205");
 
         }
-        appl: BurstApplLayer {
+        appl: BroadcastTreeApp {
             parameters:
                 @display("p=90,50");
 
@@ -73,6 +60,7 @@ module Host
                 @display("p=90,176");
 
         }
+
     connections:
         nic.uppergateOut --> net.lowergateIn;
         nic.uppergateIn <-- net.lowergateOut;
@@ -83,5 +71,4 @@ module Host
         net.upperControlOut --> appl.lowerControlIn;
 
         radioIn --> nic.radioIn;
-
 }
